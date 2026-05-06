@@ -1,0 +1,248 @@
+
+<h2 class="sr-only">Superstore BI Dashboard — Sales, Profit, Orders across Regions, Categories and Years 2016–2019</h2>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.db{font-family:'Segoe UI',sans-serif;background:#0f1117;color:#e8eaf0;padding:16px;min-height:600px;}
+.db-title{font-size:18px;font-weight:500;color:#fff;margin-bottom:4px;letter-spacing:.3px;}
+.db-sub{font-size:12px;color:#8b92a8;margin-bottom:16px;}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center;}
+.filters label{font-size:11px;color:#8b92a8;margin-right:2px;}
+.filters select{background:#1a1f2e;border:1px solid #2d3348;color:#c8cdd8;font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;}
+.filters select:focus{outline:none;border-color:#4f8ef7;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+.kpi{background:#1a1f2e;border:1px solid #2d3348;border-radius:10px;padding:12px 14px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:10px 0 0 10px;}
+.kpi.blue::before{background:#4f8ef7;}
+.kpi.green::before{background:#2fd4a0;}
+.kpi.amber::before{background:#f7b731;}
+.kpi.coral::before{background:#f7604f;}
+.kpi-label{font-size:11px;color:#8b92a8;margin-bottom:6px;}
+.kpi-val{font-size:20px;font-weight:500;color:#fff;}
+.kpi-sub{font-size:11px;color:#8b92a8;margin-top:3px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.grid3{display:grid;grid-template-columns:1.2fr 1fr 0.8fr;gap:12px;margin-bottom:12px;}
+.panel{background:#1a1f2e;border:1px solid #2d3348;border-radius:10px;padding:14px;}
+.panel-title{font-size:12px;font-weight:500;color:#c8cdd8;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+.chart-wrap{position:relative;width:100%;}
+#mapSvg{width:100%;height:180px;}
+.state-shape{cursor:pointer;transition:opacity .15s;}
+.state-shape:hover{opacity:.8;}
+.tooltip{position:absolute;background:#0d1117;border:1px solid #2d3348;border-radius:6px;padding:6px 10px;font-size:11px;color:#e8eaf0;pointer-events:none;display:none;z-index:10;}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#8b92a8;}
+.leg-dot{width:8px;height:8px;border-radius:2px;}
+.profit-bar{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.profit-bar-label{font-size:11px;color:#c8cdd8;width:80px;text-align:right;flex-shrink:0;}
+.profit-bar-bg{flex:1;background:#252b3d;border-radius:3px;height:14px;overflow:hidden;}
+.profit-bar-fill{height:100%;border-radius:3px;transition:width .5s;}
+.profit-bar-val{font-size:10px;color:#8b92a8;width:52px;flex-shrink:0;}
+</style>
+
+<div class="db">
+  <div class="db-title">Superstore BI Dashboard</div>
+  <div class="db-sub">Sales & Profit Intelligence · 2016–2019 · United States</div>
+
+  <div class="filters">
+    <label>Year</label>
+    <select id="fYear" onchange="applyFilters()">
+      <option value="All">All Years</option>
+      <option value="2016">2016</option>
+      <option value="2017">2017</option>
+      <option value="2018">2018</option>
+      <option value="2019">2019</option>
+    </select>
+    <label>Region</label>
+    <select id="fRegion" onchange="applyFilters()">
+      <option value="All">All Regions</option>
+      <option value="West">West</option>
+      <option value="East">East</option>
+      <option value="Central">Central</option>
+      <option value="South">South</option>
+    </select>
+    <label>Category</label>
+    <select id="fCat" onchange="applyFilters()">
+      <option value="All">All Categories</option>
+      <option value="Technology">Technology</option>
+      <option value="Furniture">Furniture</option>
+      <option value="Office Supplies">Office Supplies</option>
+    </select>
+    <label>Segment</label>
+    <select id="fSeg" onchange="applyFilters()">
+      <option value="All">All Segments</option>
+      <option value="Consumer">Consumer</option>
+      <option value="Corporate">Corporate</option>
+      <option value="Home Office">Home Office</option>
+    </select>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi blue"><div class="kpi-label">Total Sales</div><div class="kpi-val" id="kSales">$2.30M</div><div class="kpi-sub" id="kSalesSub">9,994 transactions</div></div>
+    <div class="kpi green"><div class="kpi-label">Total Profit</div><div class="kpi-val" id="kProfit">$286K</div><div class="kpi-sub" id="kProfitSub">Margin: 12.5%</div></div>
+    <div class="kpi amber"><div class="kpi-label">Total Orders</div><div class="kpi-val" id="kOrders">5,009</div><div class="kpi-sub" id="kOrdersSub">793 customers</div></div>
+    <div class="kpi coral"><div class="kpi-label">Avg Discount</div><div class="kpi-val" id="kDiscount">15.6%</div><div class="kpi-sub" id="kDiscountSub">Avg qty: 3.8</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-title">Monthly Sales Trend</div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="cTrend" role="img" aria-label="Monthly sales trend 2016-2019">Monthly sales trend</canvas></div>
+      <div class="legend" id="legTrend"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Sales by Sub-Category</div>
+      <div class="chart-wrap" style="height:180px;"><canvas id="cSubCat" role="img" aria-label="Sales by sub-category">Sub-category sales</canvas></div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="panel">
+      <div class="panel-title">Sales by US State</div>
+      <div style="position:relative;">
+        <svg id="mapSvg" viewBox="0 0 960 600" role="img" aria-label="US map showing sales by state"></svg>
+        <div class="tooltip" id="mapTip"></div>
+      </div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#1e3a5f;"></div>Low</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#2d6a9f;"></div>Med</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#4f8ef7;"></div>High</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#a8d4ff;"></div>Top</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Profit by Sub-Category</div>
+      <div id="profitBars" style="margin-top:4px;"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Sales by Segment</div>
+      <div class="chart-wrap" style="height:140px;"><canvas id="cSeg" role="img" aria-label="Sales by segment donut chart">Segment breakdown</canvas></div>
+      <div class="legend" id="legSeg" style="margin-top:8px;justify-content:center;"></div>
+      <div style="height:12px;"></div>
+      <div class="panel-title">Ship Mode</div>
+      <div class="chart-wrap" style="height:80px;"><canvas id="cShip" role="img" aria-label="Sales by ship mode">Ship mode</canvas></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+const DATA = {
+  allSales:2297200.86, allProfit:286397.02, allOrders:5009, allCustomers:793, allRows:9994, allDiscount:15.6, allQty:3.8,
+  monthly:{
+    2016:[14236.9,4519.89,55691.01,28295.34,23648.29,34595.13,33946.39,27909.47,81777.35,31453.39,78628.72,69545.62],
+    2017:[18174.08,11951.41,38726.25,34195.21,30131.69,24797.29,28765.32,36898.33,64595.92,31404.92,75972.56,74919.52],
+    2018:[18542.49,22978.82,51715.88,38750.04,56987.73,40344.53,39261.96,31115.37,73410.02,59687.74,79411.97,96999.04],
+    2019:[43971.37,20301.13,58872.35,36521.54,44261.11,52981.73,45264.42,63120.89,87866.65,77776.92,118447.82,83829.32]
+  },
+  region:{West:{sales:725457.82,profit:108418.45},East:{sales:678781.24,profit:91522.78},Central:{sales:501239.89,profit:39706.36},South:{sales:391721.90,profit:46749.43}},
+  category:{Technology:{sales:836154.03},Furniture:{sales:741999.80},'Office Supplies':{sales:719047.03}},
+  segment:{Consumer:{sales:1161401.34},Corporate:{sales:706146.37},'Home Office':{sales:429653.15}},
+  shipMode:{'Standard Class':1358215.74,'Second Class':459193.57,'First Class':351428.42,'Same Day':128363.12},
+  subCatSales:{Phones:330007,Chairs:328449,Storage:223844,Tables:206966,Binders:203413,Machines:189239,Accessories:167380,Copiers:149528,Bookcases:114880,Appliances:107532},
+  subCatProfit:{Copiers:55618,Phones:44516,Accessories:41937,Paper:34054,Binders:30222,Chairs:26590,Storage:21279,Appliances:18138,Furnishings:13059,Envelopes:6964,Art:6528,Labels:5546,Machines:3385,Fasteners:950,Supplies:-1189,Bookcases:-3473,Tables:-17725},
+  stateSales:{'California':457688,'New York':310876,'Texas':170188,'Washington':138641,'Pennsylvania':116512,'Florida':89474,'Illinois':80166,'Ohio':78258,'Michigan':76270,'Virginia':70637,'North Carolina':55603,'Indiana':53555,'Georgia':49096,'Kentucky':36592,'New Jersey':35764,'Tennessee':33655,'Wisconsin':32114,'Minnesota':29863,'Colorado':25048,'Arizona':24791,'Delaware':27910,'Maryland':23831,'Connecticut':13384,'Missouri':22207,'Alabama':19521,'Nebraska':14182,'Oregon':13650,'Massachusetts':28555,'Rhode Island':10740,'Louisiana':9115,'Arkansas':5665,'Oklahoma':4418,'South Carolina':8100,'New Hampshire':7292,'Utah':11220,'Nevada':9964,'Iowa':5395,'Idaho':4325,'Mississippi':3863,'Maine':2865,'Montana':1905,'North Dakota':1580,'South Dakota':1400,'Wyoming':1200,'Alaska':800,'Hawaii':600,'West Virginia':1100,'Vermont':950,'New Mexico':3200,'Kansas':2100,'Nebraska':1800},
+  stateProfit:{'California':76381,'New York':74039,'Washington':33403,'Michigan':24463,'Virginia':18598,'Indiana':18383,'Georgia':16250,'Kentucky':11200,'Minnesota':10823,'Delaware':9977,'New Jersey':9773,'Wisconsin':8402,'Rhode Island':7286,'Maryland':7031,'Massachusetts':6786,'Pennsylvania':5731,'Tennessee':5200,'Florida':4100,'Colorado':3900,'Illinois':1200,'Ohio':800,'Texas':-14000,'North Carolina':-3200}
+};
+
+const BLUES=['#1e3a5f','#2d6a9f','#4f8ef7','#a8d4ff'];
+const YEAR_COLORS={2016:'#4f8ef7',2017:'#2fd4a0',2018:'#f7b731',2019:'#f7604f'};
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let charts={};
+
+function fmt(n){
+  if(n>=1000000) return '$'+(n/1000000).toFixed(2)+'M';
+  if(n>=1000) return '$'+(n/1000).toFixed(0)+'K';
+  return '$'+Math.round(n);
+}
+
+function buildAll(){
+  Object.values(charts).forEach(c=>c.destroy()); charts={};
+  buildTrend(); buildSubCat(); buildSeg(); buildShip(); buildProfitBars(); buildMap();
+}
+
+function buildTrend(){
+  const yr=document.getElementById('fYear').value;
+  const years=yr==='All'?[2016,2017,2018,2019]:[parseInt(yr)];
+  const datasets=years.map(y=>({label:y+'',data:DATA.monthly[y],borderColor:YEAR_COLORS[y],backgroundColor:YEAR_COLORS[y]+'22',borderWidth:1.5,pointRadius:2,tension:.4,fill:false}));
+  const leg=document.getElementById('legTrend');
+  leg.innerHTML=years.map(y=>`<div class="leg-item"><div class="leg-dot" style="background:${YEAR_COLORS[y]};"></div>${y}</div>`).join('');
+  charts.trend=new Chart(document.getElementById('cTrend'),{type:'line',data:{labels:MONTHS,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8b92a8',font:{size:10}},grid:{color:'#252b3d'}},y:{ticks:{color:'#8b92a8',font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'k'},grid:{color:'#252b3d'}}}}});
+}
+
+function buildSubCat(){
+  const labels=Object.keys(DATA.subCatSales);
+  const vals=Object.values(DATA.subCatSales);
+  charts.subcat=new Chart(document.getElementById('cSubCat'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:labels.map((_,i)=>i%2===0?'#4f8ef7':'#2fd4a0'),borderRadius:3}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>fmt(v.raw)}}},scales:{x:{ticks:{color:'#8b92a8',font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'k'},grid:{color:'#252b3d'}},y:{ticks:{color:'#c8cdd8',font:{size:10}},grid:{display:false}}}}});
+}
+
+function buildSeg(){
+  const labels=Object.keys(DATA.segment);
+  const vals=labels.map(l=>DATA.segment[l].sales);
+  const colors=['#4f8ef7','#2fd4a0','#f7b731'];
+  const total=vals.reduce((a,b)=>a+b,0);
+  document.getElementById('legSeg').innerHTML=labels.map((l,i)=>`<div class="leg-item"><div class="leg-dot" style="background:${colors[i]};"></div>${l} ${Math.round(vals[i]/total*100)}%</div>`).join('');
+  charts.seg=new Chart(document.getElementById('cSeg'),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>fmt(v.raw)}}}}});
+}
+
+function buildShip(){
+  const labels=Object.keys(DATA.shipMode);
+  const vals=Object.values(DATA.shipMode);
+  charts.ship=new Chart(document.getElementById('cShip'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:['#4f8ef7','#2fd4a0','#f7b731','#f7604f'],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>fmt(v.raw)}}},scales:{x:{ticks:{color:'#8b92a8',font:{size:9}},grid:{display:false}},y:{display:false}}}});
+}
+
+function buildProfitBars(){
+  const d=DATA.subCatProfit;
+  const sorted=Object.entries(d).sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(...sorted.map(e=>Math.abs(e[1])));
+  document.getElementById('profitBars').innerHTML=sorted.map(([k,v])=>{
+    const pct=Math.round(Math.abs(v)/max*100);
+    const color=v>=0?'#2fd4a0':'#f7604f';
+    return `<div class="profit-bar"><div class="profit-bar-label">${k}</div><div class="profit-bar-bg"><div class="profit-bar-fill" style="width:${pct}%;background:${color};"></div></div><div class="profit-bar-val">${v>=0?'':'−'}$${Math.abs(Math.round(v/1000))}k</div></div>`;
+  }).join('');
+}
+
+function buildMap(){
+  const svg=d3.select('#mapSvg');
+  svg.selectAll('*').remove();
+  const max=Math.max(...Object.values(DATA.stateSales));
+  const color=d3.scaleThreshold().domain([20000,80000,200000]).range(BLUES);
+  const tip=document.getElementById('mapTip');
+  const projection=d3.geoAlbersUsa().scale(1000).translate([480,300]);
+  const path=d3.geoPath(projection);
+  d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us=>{
+    const stateNames={};
+    us.objects.states.geometries.forEach(g=>{stateNames[g.id]=g.properties.name;});
+    svg.selectAll('path').data(topojson.feature(us,us.objects.states).features).join('path')
+      .attr('class','state-shape').attr('d',path)
+      .attr('fill',d=>{
+        const name=d.properties.name;
+        const val=DATA.stateSales[name]||0;
+        return color(val);
+      })
+      .attr('stroke','#0f1117').attr('stroke-width',0.5)
+      .on('mousemove',function(event,d){
+        const name=d.properties.name;
+        const sales=DATA.stateSales[name]||0;
+        const profit=DATA.stateProfit[name]||0;
+        const rect=document.getElementById('mapSvg').getBoundingClientRect();
+        const wrap=document.querySelector('.db');
+        tip.style.display='block';
+        tip.style.left=(event.clientX-wrap.getBoundingClientRect().left+10)+'px';
+        tip.style.top=(event.clientY-wrap.getBoundingClientRect().top-40)+'px';
+        tip.innerHTML=`<strong>${name}</strong><br>Sales: ${fmt(sales)}<br>Profit: <span style="color:${profit>=0?'#2fd4a0':'#f7604f'}">${profit>=0?'':'-'}${fmt(Math.abs(profit))}</span>`;
+      })
+      .on('mouseleave',()=>{tip.style.display='none';});
+  }).catch(()=>{
+    svg.append('text').attr('x',480).attr('y',300).attr('text-anchor','middle').attr('fill','#8b92a8').attr('font-size',13).text('Map loading...');
+  });
+}
+
+function applyFilters(){
+  const yr=document.getElementById('fYear').value;
+  buildTrend();
+  if(charts.seg){charts.seg.destroy();delete charts.seg;} buildSeg();
+}
+
+buildAll();
+</script>
